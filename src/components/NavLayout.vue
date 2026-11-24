@@ -69,12 +69,9 @@
             </div>
 
             <div
-                v-if="
-                    !isFullscreen &&
-                    (taskStore.batchSubmission.running ||
-                        taskStore.queueStatus.paused)
-                "
+                v-if="hasStatusBanners"
                 class="status-banners"
+                :class="{ 'is-top-chrome': !hasConnectionStrip }"
             >
                 <n-alert
                     v-if="taskStore.batchSubmission.running"
@@ -121,6 +118,7 @@
                 class="main-content"
                 :class="{
                     'has-bottom-nav': isNarrow && !isFullscreen,
+                    'has-top-chrome': hasTopChrome,
                     'is-fullscreen': isFullscreen,
                 }"
             >
@@ -317,6 +315,15 @@ watch(
 // 移动端响应式布局状态；公共方法统一断点，并在组件销毁时清理监听。
 const isNarrow = useNarrowLayout()
 const isFullscreen = computed(() => route.meta.fullscreen === true)
+const hasConnectionStrip = computed(() => !native && !isFullscreen.value)
+const hasStatusBanners = computed(
+    () =>
+        !isFullscreen.value &&
+        (taskStore.batchSubmission.running || taskStore.queueStatus.paused),
+)
+const hasTopChrome = computed(
+    () => hasConnectionStrip.value || hasStatusBanners.value,
+)
 
 onMounted(() => {
     if (native) void showStorageRecoveryReport()
@@ -391,7 +398,9 @@ function handleMenuClick(key: string) {
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
-    padding: 6px calc(var(--page-padding) + var(--safe-area-right));
+    padding: calc(6px + var(--safe-area-top))
+        calc(var(--page-padding) + var(--safe-area-right)) 6px
+        calc(var(--page-padding) + var(--safe-area-left));
     background: var(--bg-glass);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
@@ -429,6 +438,10 @@ function handleMenuClick(key: string) {
     padding: 10px calc(var(--page-padding) + var(--safe-area-right)) 0
         calc(var(--page-padding) + var(--safe-area-left));
     flex-shrink: 0;
+}
+
+.status-banners.is-top-chrome {
+    padding-top: calc(10px + var(--safe-area-top));
 }
 
 .status-banner {

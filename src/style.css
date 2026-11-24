@@ -129,8 +129,21 @@ body {
 }
 
 /* 通用确认弹窗适应窄屏和较小视口，长内容滚动后仍可操作底部按钮。 */
+body .n-modal-body-wrapper {
+    padding: var(--safe-area-top) var(--safe-area-right)
+        var(--safe-area-bottom) var(--safe-area-left) !important;
+    box-sizing: border-box !important;
+}
+
+body .n-modal-scroll-content {
+    padding: 16px;
+    box-sizing: border-box;
+}
+
 body .n-dialog {
-    max-width: calc(100vw - 32px);
+    max-width: calc(
+        100vw - 32px - var(--safe-area-left) - var(--safe-area-right)
+    );
     max-height: calc(
         100vh - 32px - var(--safe-area-top) - var(--safe-area-bottom)
     );
@@ -146,28 +159,30 @@ body .n-dialog__action {
     flex-wrap: wrap;
 }
 
-/* ---------- Android 安全区适配 ---------- */
+/* ---------- 安全区适配（兼容 Android 边到边显示） ---------- */
 
-/* 主内容区顶部预留状态栏高度（全屏播放页由页面自身处理安全区） */
-html.android .main-content:not(.is-fullscreen) {
+/* 主内容区顶部预留状态栏高度（全屏播放页及存在顶部横幅时由对应容器处理） */
+.main-content:not(.is-fullscreen):not(.has-top-chrome) {
     padding-top: calc(
         var(--page-padding, 16px) + var(--safe-area-top)
     ) !important;
 }
 
-/* 移动端底部导航区域避开 Android 手势条/底部安全区 */
+/* 移动端底部导航区域避开手势条/底部安全区 */
 html.android .bottom-nav {
     height: calc(62px + var(--safe-area-bottom)) !important;
     padding-bottom: var(--safe-area-bottom) !important;
 }
 
-/* 弹窗容器顶部避开状态栏 */
-html.android .n-dialog-container,
-html.android .n-modal-container {
+/* 弹窗容器与通知提示避开状态栏（同时保留全屏遮罩） */
+body .n-dialog-container {
     top: var(--safe-area-top) !important;
 }
 
-/* 通知提示避开状态栏 */
-html.android .n-notification-container {
+body .n-notification-container {
     top: calc(12px + var(--safe-area-top)) !important;
+    right: calc(12px + var(--safe-area-right)) !important;
+    max-width: calc(
+        100vw - 24px - var(--safe-area-left) - var(--safe-area-right)
+    ) !important;
 }

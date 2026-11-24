@@ -14,6 +14,7 @@
     <n-data-table
         v-else
         class="task-table"
+        size="small"
         :columns="columns"
         :data="tasks"
         :row-key="(row: TaskRecord) => row.id"
@@ -101,7 +102,7 @@ function renderProgress(row: TaskRecord) {
         h(NProgress, {
             percentage: percent,
             indicatorTextPlacement: 'inside',
-            height: 18,
+            height: 15,
             borderRadius: 999,
         }),
     ]
@@ -250,8 +251,13 @@ const columns = computed<DataTableColumn<TaskRecord>[]>(() => [
     box-shadow: var(--shadow-sm);
 }
 
+.task-table :deep(.n-data-table-th) {
+    padding: 8px 12px;
+}
+
 .task-table :deep(.n-data-table-td) {
     overflow-wrap: anywhere;
+    padding: 6px 12px;
 }
 
 .task-table :deep(.song-cell) {
@@ -262,9 +268,9 @@ const columns = computed<DataTableColumn<TaskRecord>[]>(() => [
 }
 
 .task-table :deep(.song-thumb) {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
     object-fit: cover;
     flex-shrink: 0;
 }
@@ -285,19 +291,21 @@ const columns = computed<DataTableColumn<TaskRecord>[]>(() => [
 
 .task-table :deep(.song-title) {
     font-weight: 600;
-    font-size: 13.5px;
+    font-size: 13px;
+    line-height: 1.25;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .task-table :deep(.song-artist) {
-    font-size: 12px;
+    font-size: 11.5px;
+    line-height: 1.25;
     color: var(--color-text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 .task-table :deep(.quality-badge) {

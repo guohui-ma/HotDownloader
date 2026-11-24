@@ -8,7 +8,6 @@ import {
     NCheckbox,
     NTag,
     NProgress,
-    NSpace,
     NEllipsis,
     type TagProps,
 } from 'naive-ui'
@@ -95,6 +94,66 @@ export default defineComponent({
             emit('update:selectedRowKeys', Array.from(newKeys))
         }
 
+        function renderBottomLeft(task: TaskRecord) {
+            if (task.status === 'error' || task.status === 'interrupted') {
+                return h(
+                    'div',
+                    {
+                        class: [
+                            'task-card-status-message',
+                            task.status === 'error'
+                                ? 'is-error'
+                                : 'is-interrupted',
+                        ],
+                    },
+                    task.status === 'interrupted'
+                        ? '上次运行中断，等待恢复'
+                        : task.errorMsg || '下载失败',
+                )
+            }
+
+            if (task.status === 'downloading' || task.status === 'paused') {
+                const percent = progressPercent(task)
+                return h('div', { class: 'task-card-progress-inline' }, [
+                    h(NProgress, {
+                        percentage: percent,
+                        showIndicator: false,
+                        height: 6,
+                        borderRadius: 999,
+                    }),
+                    h(
+                        'span',
+                        { class: 'task-card-percent' },
+                        task.status === 'downloading' &&
+                            task.speed &&
+                            task.speed > 0
+                            ? `${percent}% · ${formatSpeed(task.speed)}`
+                            : `${percent}%`,
+                    ),
+                ])
+            }
+
+            if (props.isAndroid && task.filePath) {
+                return h('div', { class: 'task-card-filepath' }, [
+                    h(
+                        NEllipsis,
+                        {
+                            style: {
+                                fontSize: '11px',
+                                maxWidth: '100%',
+                            },
+                            expandTrigger: 'click',
+                            lineClamp: 1,
+                            tooltip: false,
+                        },
+                        () => task.filePath,
+                    ),
+                ])
+            }
+
+            return null
+        }
+
         function renderTaskCard(task: TaskRecord) {
             const status = statusMap[task.status] || {
                 type: 'default' as const,
@@ -102,9 +161,14 @@ export default defineComponent({
             }
             const checked = props.selectedRowKeys.includes(task.id)
             const disabled = task.status === 'downloading'
+            const actions = actionNodes(task)
+            const leftNode = renderBottomLeft(task)
+
+            const metaParts = [task.artist || '未知歌手']
+            if (task.quality) metaParts.push(task.quality)
 
             const cardChildren = [
-                h('div', { class: 'task-card-header' }, [
+                h('div', { class: 'task-card-top' }, [
                     h(NCheckbox, {
                         checked,
                         disabled,
@@ -123,7 +187,7 @@ export default defineComponent({
                               {
                                   class: 'task-card-cover task-card-cover-fallback',
                               },
-                              [h(AppIcon, { name: 'music', size: 18 })],
+                              [h(AppIcon, { name: 'music', size: 15 })],
                           ),
                     h('div', { class: 'task-card-song' }, [
                         h(
@@ -133,86 +197,38 @@ export default defineComponent({
                         ),
                         h(
                             'div',
-                            { class: 'task-card-artist' },
-                            task.artist || '未知歌手',
+                            { class: 'task-card-sub' },
+                            metaParts.join(' · '),
                         ),
                     ]),
-                ]),
-
-                h('div', { class: 'task-card-meta' }, [
                     h(
                         NTag,
                         {
                             type: status.type,
-                            size: 'small',
+                            size: 'tiny',
                             round: true,
                             bordered: false,
+                            class: 'task-status-tag',
                         },
                         () => status.label,
                     ),
-                    h('span', { class: 'task-card-quality' }, task.quality),
-                    task.status === 'downloading' &&
-                    task.speed &&
-                    task.speed > 0
-                        ? h(
-                              'span',
-                              { class: 'task-card-speed' },
-                              formatSpeed(task.speed),
-                          )
-                        : null,
                 ]),
-
-                task.status === 'error' || task.status === 'interrupted'
-                    ? h(
-                          'div',
-                          {
-                              class: [
-                                  'task-card-status-message',
-                                  task.status === 'error'
-                                      ? 'is-error'
-                                      : 'is-interrupted',
-                              ],
-                          },
-                          task.status === 'interrupted'
-                              ? '上次运行中断，等待恢复'
-                              : task.errorMsg || '下载失败',
-                      )
-                    : h('div', { class: 'task-card-progress' }, [
-                          h(NProgress, {
-                              percentage: progressPercent(task),
-                              height: 10,
-                              borderRadius: 999,
-                          }),
-                      ]),
             ]
 
-            if (props.isAndroid) {
+            if (leftNode || actions.length > 0) {
                 cardChildren.push(
-                    h('div', { class: 'task-card-filepath' }, [
-                        h(
-                            NEllipsis,
-                            {
-                                style: {
-                                    fontSize: '12px',
-                                    maxWidth: '100%',
-                                },
-                                expandTrigger: 'click',
-                                lineClamp: 1,
-                                tooltip: false,
-                            },
-                            () => task.filePath || '-',
-                        ),
+                    h('div', { class: 'task-card-bottom' }, [
+                        leftNode
+                            ? h('div', { class: 'task-card-bottom-left' }, [
+                                  leftNode,
+                              ])
+                            : null,
+                        actions.length > 0
+                            ? h('div', { class: 'task-card-actions' }, actions)
+                            : null,
                     ]),
                 )
             }
-
-            cardChildren.push(
-                h('div', { class: 'task-card-actions' }, [
-                    h(NSpace, { justify: 'end', wrap: true }, () =>
-                        actionNodes(task),
-                    ),
-                ]),
-            )
 
             return h(
                 'div',
@@ -242,7 +258,7 @@ export default defineComponent({
 .task-card-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
     min-width: 0;
 }
 
@@ -250,8 +266,8 @@ export default defineComponent({
     min-width: 0;
     background: var(--bg-sidebar);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 14px;
+    border-radius: 12px;
+    padding: 8px 10px;
     transition:
         border-color 0.2s,
         background-color 0.2s;
@@ -262,17 +278,17 @@ export default defineComponent({
     background: var(--color-primary-soft);
 }
 
-.task-card-header {
+.task-card-top {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 8px;
+    min-width: 0;
 }
 
 .task-card-cover {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
     object-fit: cover;
     flex-shrink: 0;
 }
@@ -291,16 +307,17 @@ export default defineComponent({
 
 .task-card-title {
     font-weight: 600;
-    font-size: 15px;
-    line-height: 1.4;
+    font-size: 13.5px;
+    line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--color-text);
 }
 
-.task-card-artist {
-    font-size: 13px;
+.task-card-sub {
+    font-size: 11.5px;
+    line-height: 1.3;
     color: var(--color-text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -308,55 +325,57 @@ export default defineComponent({
     margin-top: 2px;
 }
 
-.task-card-meta {
+.task-status-tag {
+    flex-shrink: 0;
+}
+
+.task-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    margin-top: 6px;
+    padding-left: 26px;
+    min-width: 0;
+}
+
+.task-card-bottom-left {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+.task-card-progress-inline {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
+    min-width: 0;
 }
 
-.task-card-quality {
-    max-width: 100%;
-    overflow-wrap: anywhere;
+.task-card-progress-inline :deep(.n-progress) {
+    flex: 1;
+    min-width: 48px;
+}
+
+.task-card-percent {
+    flex-shrink: 0;
     font-size: 11px;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    background: var(--bg-surface-subtle);
-    padding: 2px 9px;
-    border-radius: 999px;
-}
-
-.task-card-speed {
-    font-size: 12px;
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
-}
-
-.task-card-progress {
-    margin-bottom: 8px;
 }
 
 .task-card-filepath {
     min-width: 0;
     overflow-wrap: anywhere;
-    margin-bottom: 8px;
-    padding: 6px 10px;
-    background: var(--bg-surface-subtle);
-    border-radius: 8px;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-text-secondary);
 }
 
 .task-card-status-message {
-    margin-bottom: 8px;
-    padding: 6px 10px;
-    background: var(--bg-surface-subtle);
-    border-radius: 8px;
-    font-size: 12px;
+    font-size: 11.5px;
+    line-height: 1.35;
     word-break: break-word;
     overflow-wrap: anywhere;
-    line-height: 1.6;
 }
 
 .task-card-status-message.is-error {
@@ -368,18 +387,24 @@ export default defineComponent({
 }
 
 .task-card-actions {
-    padding-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .task-card-actions :deep(.n-button) {
-    min-height: 40px;
-    padding-left: 14px;
-    padding-right: 14px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 999px;
 }
 
 .task-card-empty {
     text-align: center;
-    padding: 48px 0;
+    padding: 40px 0;
     color: var(--color-text-secondary);
     font-size: 14px;
 }

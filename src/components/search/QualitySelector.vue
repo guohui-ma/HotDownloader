@@ -54,7 +54,7 @@ defineExpose({ selected })
 
 <style scoped>
 .quality-selector {
-    max-height: 320px;
+    max-height: min(320px, 46dvh);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
